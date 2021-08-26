@@ -200,7 +200,7 @@
                     .then(data => {
                         ticket = data.ticket;
                         
-                        socket = io.connect('ws://' + document.domain + ':' + location.port + '/' + ticket);
+                        socket = io.connect('wss://' + document.domain + ':' + location.port + '/' + ticket);
                         socket.on('message', function (message) {
                             // console.log(message);
                             

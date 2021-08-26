@@ -4,7 +4,7 @@ print('Patched eventlet!')
 
 from flask import Flask, redirect, send_file
 from flask_socketio import SocketIO
-import requests, zipfile, re, os, threading
+import requests, zipfile, re, os, threading, traceback
 from io import BytesIO
 from db import initialize_database, store_file, get_file
 
@@ -36,7 +36,8 @@ def _getUser(username):
         ret = {key: req['data'][key] for key in ['name', 'username', 'avatar', 'posts_count']}
     except AssertionError:
         ret = {'error': "Invalid username! Try again."}
-    except:
+    except Exception as e:
+        traceback.format_exc()
         ret = {'error': 'Something went wrong... I blame Viblo ¯\_(ツ)_/¯'}
     return ret
 
@@ -50,14 +51,15 @@ def getDownload(ticket):
             as_attachment=True
         )
     except Exception as e:
-        print(e)
+        print(traceback.format_exc())
         return redirect('/')
 
 @app.route('/request/<username>')
 def getTicket(username):
     try:
         posts_count = _getUser(username)['posts_count']
-    except:
+    except Exception as e:
+        traceback.format_exc()
         return redirect('/')
     ticket = os.urandom(8).hex()
     threading.Thread(target=prepDownload, args=(username, posts_count, ticket)).start()
@@ -88,6 +90,7 @@ def prepDownload(username, posts_count, ticket):
                     zf.writestr(prefix + '_files/' + fname, requests.get(url, stream=True).raw.data)
                     replacements[url] = fname
                 except:
+                    # if unable to fetch image, leave as-is
                     pass
             for k, v in replacements.items():
                 re.sub(

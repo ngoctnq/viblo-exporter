@@ -2,7 +2,7 @@ import sqlite3, threading, time, os
 from typing import Tuple
 
 # storage expires in 1 hour
-EXPIRATION = 60 #* 60
+EXPIRATION = 60 * 60
 
 
 class KillableThread(threading.Thread):
@@ -60,7 +60,7 @@ def initialize_database(filename='sql.db'):
         content BLOB NOT NULL
     )''')
     
-    KillableThread(client, sleep_interval=30).start()
+    KillableThread(client, sleep_interval=60 * 10).start()
 
 
 def store_file(ticket: str, username: str, content: bytes):
