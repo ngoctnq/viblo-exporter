@@ -175,8 +175,8 @@
             percolor = cmpStyle.getPropertyValue('--percent-color');
             formElem.style["background-image"] = "linear-gradient(to right, " +
                 percolor + ", " +
-                percolor + " " + (percent - 5) + "%, " +
-                "#00000000 " + percent + "%, " +
+                percolor + " " + percent + "%, " +
+                "#00000000 " + (percent + 5) + "%, " +
                 "#00000000)";
             textSpan.value = description;
         }
@@ -193,7 +193,7 @@
                 document.getElementById('download').disabled = true;
                 formElem.style.border = "block";
                 formElem.style.animation = "downloading 2s infinite";
-                updateProgress(0, "Requesting download...");
+                updateProgress(-5, "Requesting download...");
 
                 fetch('/request/' + username)
                     .then(request => request.json())

@@ -4,15 +4,17 @@ print('Patched eventlet!')
 
 from flask import Flask, redirect, send_file
 from flask_socketio import SocketIO
-import requests, zipfile, re, os, redis, threading
+import requests, zipfile, re, os, threading
 from io import BytesIO
+from db import initialize_database, store_file, get_file
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(16).hex()
 
-client = redis.StrictRedis()
 socketio = SocketIO(app, async_mod='eventlet')
 print('Started socketio!')
+
+initialize_database()
 
 @app.route('/')
 def index():
@@ -41,11 +43,10 @@ def _getUser(username):
 @app.route('/download/<ticket>')
 def getDownload(ticket):
     try:
-        content = client.hgetall(ticket)
-        client.delete(ticket)
+        username, content = get_file(ticket)
         return send_file(
-            BytesIO(content[b'file']),
-            download_name=content[b'username'].decode() + '.zip',
+            BytesIO(content),
+            download_name=username + '.zip',
             as_attachment=True
         )
     except Exception as e:
@@ -97,12 +98,7 @@ def prepDownload(username, posts_count, ticket):
             zf.writestr(prefix + '.md', post['contents'])
             
     memory_file.seek(0)
-    with client.pipeline(transaction=True) as pipe:
-        pipe.hset(ticket, 'username', username)
-        pipe.hset(ticket, 'file', memory_file.read())
-        pipe.expire(ticket, 60 * 60)
-        pipe.execute(raise_on_error=True)
-
+    store_file(ticket, username, memory_file.read())
     socketio.send({'current': len(req), 'total': len(req)}, namespace='/'+ticket)
 
 if __name__ == '__main__':
