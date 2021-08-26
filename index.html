@@ -1,0 +1,259 @@
+<!-- kwkt wuz hia -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Viblo Exporter - Download your Viblo posts!</title>
+    <script src="https://kit.fontawesome.com/a1f0efc1c1.js" crossorigin="anonymous"></script>
+
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@100;400;500&display=swap");
+
+        :root {
+            --blue: #69779b;
+            --purple: #9692af;
+            --teal: #acdbdf;
+            --light: #d7eaea;
+            --inactive: #7881a180;
+            --percent-color: #81e662;
+            --danger: #c94c42;
+        }
+
+        @keyframes downloading {
+            0% {
+                border-color: var(--purple)
+            }
+
+            50% {
+                border-color: var(--blue)
+            }
+
+            100% {
+                border-color: var(--purple)
+            }
+        }
+
+        html,
+        body {
+            height: 100%;
+            font-family: "Roboto", sans-serif;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: inherit;
+        }
+
+        body {
+            display: table;
+            margin: auto;
+            background-image: radial-gradient(circle at 0% 0%,
+                    var(--purple),
+                    var(--teal) 51%,
+                    var(--light));
+        }
+
+        #content {
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+        #title {
+            font-size: 64px;
+        }
+
+        #viblo {
+            color: var(--blue);
+            font-weight: 500;
+            display: inline;
+        }
+
+        #exporter {
+            font-weight: 100;
+            display: inline;
+        }
+
+        .input {
+            margin-top: 10px;
+            position: relative;
+            display: flex;
+            flex-direction: row;
+            border-radius: 10px;
+            background: var(--light);
+            padding: 0.5rem 1rem 0.5rem;
+
+            border-style: solid;
+            border-width: 2px;
+            border-color: var(--blue);
+            transition: border-color 0.25s;
+            transition: background-image 0.25s;
+        }
+
+        .input input {
+            background: #00000000;
+            border: none;
+            outline: 0;
+            flex-grow: 1;
+            width: 100%;
+            color: var(--blue);
+            font-size: 1.2rem;
+            line-height: 2rem;
+            vertical-align: middle;
+
+            font-family: "Roboto", sans-serif;
+            font-weight: 400;
+        }
+
+        .input input::-webkit-input-placeholder {
+            color: var(--inactive);
+        }
+
+        #prefix {
+            font-size: 1.3rem;
+            padding-bottom: 3px;
+            padding-left: 2px;
+            font-weight: 500;
+            color: var(--blue);
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .input button {
+            background: #00000000;
+            border: none;
+            color: var(--inactive);
+            font-size: 2.4rem;
+            line-height: 2.4rem;
+            vertical-align: middle;
+            transition: color 0.25s;
+        }
+
+        .input button:hover {
+            color: var(--blue);
+        }
+
+        #download {
+            padding-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="content">
+
+        <a id="title" href='/'>
+            <div id="viblo">VIBLO</div>
+            <div id="exporter">EXPORTER</div>
+        </a>
+
+        <form action="" autocomplete="off" class="input" id="form">
+            <button id="download" type="submit" hidden><i class="fas fa-download"></i></button>
+            <span id="prefix">@</span>
+            <input type="text" id="input" placeholder="username (e.g., ngoctnq)" required autofocus></input>
+            <button id="search" type="submit"><i class="fas fa-angle-right"></i></button>
+        </form>
+
+    </div>
+
+    <script src="https://cdn.socket.io/4.1.2/socket.io.min.js"
+        integrity="sha384-toS6mmwu70G0fw54EGlWWeA4z3dyJ+dlXBtSURSKN4vyRFOcxd3Bzjj/AoOwY+Rg"
+        crossorigin="anonymous"></script>
+    <script>
+        formElem = document.getElementById('form');
+        textSpan = document.getElementById('input');
+        cmpStyle = getComputedStyle(document.documentElement);
+        username = "";
+        ticket = "";
+        document.getElementById('download').hidden = true;
+
+        function updateProgress(percent, description) {
+            formElem.style.background = '#00000000';
+            percolor = cmpStyle.getPropertyValue('--percent-color');
+            formElem.style["background-image"] = "linear-gradient(to right, " +
+                percolor + ", " +
+                percolor + " " + (percent - 5) + "%, " +
+                "#00000000 " + percent + "%, " +
+                "#00000000)";
+            textSpan.value = description;
+        }
+
+        textSpan.addEventListener("input", () => {
+            formElem.style["border-color"] = cmpStyle.getPropertyValue('--blue');
+        })
+
+        formElem.addEventListener("submit", (event) => {
+            event.preventDefault();
+
+            if (username) {
+                document.getElementById('download').style.color = cmpStyle.getPropertyValue('--blue');
+                document.getElementById('download').disabled = true;
+                formElem.style.border = "block";
+                formElem.style.animation = "downloading 2s infinite";
+                updateProgress(0, "Requesting download...");
+
+                fetch('/request/' + username)
+                    .then(request => request.json())
+                    .then(data => {
+                        ticket = data.ticket;
+                        
+                        socket = io.connect('ws://' + document.domain + ':' + location.port + '/' + ticket);
+                        socket.on('message', function (message) {
+                            // console.log(message);
+                            
+                            let idx = message.current;
+                            let total = message.total;
+                            if (idx < total)
+                                updateProgress(
+                                    Math.round(100 * idx / total),
+                                    "Exporting " + (idx + 1) + "/" + total + " posts...");
+                            else {
+                                formElem.style.background = '#00000000';
+                                formElem.style.border = 'none';
+                                textSpan.value = 'Download will be started shortly...';
+                                window.location = '/download/' + ticket;
+                                socket.disconnect();
+                            }
+                        });
+                    });
+            }
+
+            else if (textSpan.value.indexOf("/") > -1) {
+                formElem.style["border-color"] = cmpStyle.getPropertyValue('--danger');
+                textSpan.value = "";
+                textSpan.placeholder = "Invalid username! Try again.";
+            }
+
+            else {
+                fetch('/query/' + textSpan.value)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            formElem.style["border-color"] = cmpStyle.getPropertyValue('--danger');
+                            textSpan.value = "";
+                            textSpan.placeholder = data.error;
+                        }
+                        else if (data.posts_count === 0) {
+                            textSpan.placeholder = textSpan.value + " has no posts to be downloaded!";
+                            textSpan.value = "";
+                        }
+                        else {
+                            textSpan.disabled = true;
+                            formElem.style.background = "inherit";
+                            formElem.style['border-color'] = "#00000000";
+                            username = textSpan.value;
+                            document.getElementById('prefix').innerText = "";
+                            document.getElementById('search').hidden = true;
+                            document.getElementById('download').hidden = false;
+                            textSpan.value = "Click to download everything as a .zip archive";
+                        }
+                    });
+            }
+        });
+    </script>
+</body>
+
+</html>
