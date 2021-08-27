@@ -1,0 +1,354 @@
+<!-- kwkt wuz hia -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Viblo Exporter - Download your Viblo posts!</title>
+    <script src="https://kit.fontawesome.com/a1f0efc1c1.js" crossorigin="anonymous"></script>
+
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@100;400;500&display=swap");
+
+        :root {
+            --blue: #69779b;
+            --purple: #9692af;
+            --teal: #acdbdf;
+            --light: #d7eaea;
+            --inactive: #7881a180;
+            --percent-color: #81e662;
+            --danger: #c94c42;
+        }
+
+        html,
+        body {
+            height: 100%;
+            font-family: "Roboto", sans-serif;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: inherit;
+        }
+
+        body {
+            display: table;
+            margin: auto;
+            background-image: radial-gradient(circle at 0% 0%,
+                    var(--purple),
+                    var(--teal) 51%,
+                    var(--light));
+        }
+
+        #content {
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+        #title {
+            font-size: 64px;
+        }
+
+        #viblo {
+            color: var(--blue);
+            font-weight: 500;
+            display: inline;
+        }
+
+        #exporter {
+            font-weight: 100;
+            display: inline;
+        }
+
+        .input {
+            margin-top: 10px;
+            position: relative;
+            display: flex;
+            flex-direction: row;
+            border-radius: 10px;
+            background: var(--light);
+            padding: 0.5rem 1rem 0.5rem;
+
+            border-style: solid;
+            border-width: 2px;
+            border-color: var(--blue);
+            transition: border-color 0.25s, background-color 0.2s;
+        }
+
+        .input input {
+            background: #00000000;
+            border: none;
+            outline: 0;
+            flex-grow: 1;
+            width: 100%;
+            color: var(--blue);
+            font-size: 1.2rem;
+            line-height: 2rem;
+            vertical-align: middle;
+
+            font-family: "Roboto", sans-serif;
+            font-weight: 400;
+        }
+
+        .input input::-webkit-input-placeholder {
+            color: var(--inactive);
+        }
+
+        #prefix {
+            font-size: 1.3rem;
+            padding-bottom: 3px;
+            padding-left: 2px;
+            font-weight: 500;
+            color: var(--blue);
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .input button {
+            background: #00000000;
+            border: none;
+            color: var(--inactive);
+            font-size: 2.4rem;
+            line-height: 2.4rem;
+            vertical-align: middle;
+            transition: color 0.25s;
+        }
+
+        .input button:hover {
+            color: var(--blue);
+        }
+
+        #statusbar {
+            margin: 20px;
+            line-height: 1.6;
+            height: 2em;
+        }
+        #copypaste {
+            display: flex;
+            height: 0px;
+            visibility: hidden;
+            transition: height 0.1s, opacity 0.1s;
+        }
+        #box1 {
+            margin-right: 1%;
+        }
+        #box2 {
+            margin-left: 1%;
+            resize: none;
+            outline: none;
+        }
+        #box1, #box2 {
+            width: 48.5%;
+            background-color: var(--light);
+            border: none;
+            scrollbar-width: thin;
+            border-radius: 10px;
+            filter: drop-shadow(0 0 2px var(--blue));
+        }
+        #username {
+            font-weight: 500;
+            color: var(--blue);
+        }
+        #copypaste button {
+            color: var(--blue);
+            font-weight: 500;
+            transition: color 0.2s, background-color 0.2s;
+        }
+        #copypaste button:hover {
+            background-color: var(--blue);
+            color: var(--light);
+        }
+        #download {
+            padding-right: 10px;
+            color: var(--blue);
+        }
+        @keyframes disappear {
+            100% {
+                height: 0px;
+                opacity: 0%;
+                visibility: hidden;
+            }
+        }
+        @keyframes downloading {
+            0% { border-color: var(--purple); }
+            50% { border-color: var(--blue); }
+            100% { border-color: var(--purple); }
+        }
+        @keyframes pulsating {
+            0% { opacity: 100%; }
+            100% { opacity: 20%; }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="content">
+        <a id="title" href='/viblo'>
+            <div id="viblo">VIBLO</div>
+            <div id="exporter">EXPORTER</div>
+        </a>
+
+        <form action="" autocomplete="off" class="input" id="form">
+            <button id="download" type="submit" hidden><i class="fas fa-download"></i></button>
+            <span id="prefix">@</span>
+            <input type="text" id="input" placeholder="username (e.g., ngoctnq)" required autofocus></input>
+            <button id="search" type="submit"><i class="fas fa-angle-right"></i></button>
+        </form>
+
+        <div id="statusbar">
+            Due to CORS and Cloudflare, you will have to do this semi-manually.
+        </div>
+
+        <div id="copypaste">
+            <iframe id="box1" src=""></iframe>
+            <textarea id="box2"></textarea>
+        </div>
+    </div>
+
+    <script src="https://github.com/Touffy/client-zip/releases/download/v2.0.0/worker.js"></script>
+    <script>
+        
+        cmpStyle = getComputedStyle(document.documentElement);
+        formElem = document.getElementById('form');
+        textSpan = document.getElementById('input');
+        textArea = document.getElementById('box2');
+        statusbar = document.getElementById('statusbar');
+        iframeObj = document.getElementById('box1');
+        copypaste = document.getElementById('copypaste');
+        formElem.addEventListener("submit", (event) => {
+            event.preventDefault();
+            iframeObj.src = "http://api.viblo.asia/users/" + textSpan.value;
+            
+            copypaste.style.visibility = 'visible';
+            copypaste.style.height = '30%';
+            postCount = -1;
+            textArea.value = "";
+            data = {};
+
+            statusbar.innerText = "Now copy the content of the left box to the right."
+        });
+        textArea.addEventListener("input", (event) => {
+            content = textArea.value;
+            if (postCount === -1) {
+                try {
+                    data = JSON.parse(content).data;
+                    if (!data.hasOwnProperty('posts_count') || !data.hasOwnProperty('name')) throw 'Bad content!'
+                    postCount = data.posts_count;
+                    if (postCount === 0) {
+                        statusbar.innerHTML = '<span id="username">' + data.name + '</span> has no posts to be downloaded.';    
+                    }
+                    else {
+                        username = data.username;
+                        textArea.value = "";
+                        statusbar.innerHTML = 'Requesting information from Viblo, please wait...';
+                        iframeObj.src = "http://api.viblo.asia/users/" + textSpan.value + '/posts?limit=' + postCount;
+                        copypaste.style['pointer-events'] = 'none';
+                        copypaste.style.animation = 'pulsating 1s linear infinite alternate';
+                        iframeObj.onload = () => {
+                            if (data.hasOwnProperty('name'))
+                                statusbar.innerHTML = 'Good job <span id="username">' + data.name + '</span>, now do that one more time.';
+                            copypaste.style['pointer-events'] = '';
+                            copypaste.style.animation = 'none';
+                            copypaste.style.opacity = '100%';
+                        }
+                    }
+                }
+                catch {
+                    statusbar.innerText = "Invalid content detected. Try copying again?"
+                }
+            }
+            else {
+                try {
+                    data = JSON.parse(content).data;
+                    if (!Array.isArray(data) || data.length != postCount) throw 'Invalid post data!'
+                    statusbar.innerText = "Downloading images might take a while. What do you want?"
+                    copypaste.innerHTML = '<button id="box1" onclick="getDownload(false)">Just the Markdowns</button><button id="box2" onclick="getDownload(true)">Give me everything</button>';
+                    copypaste.style.height = '36px';
+                    textSpan.disabled = true;
+                    document.getElementById('search').disabled = true;
+                    let button2 = document.getElementById('box2')
+                    button2.onmouseover = () => statusbar.innerHTML = 'Images from Viblo CDN will <span id="username">not</span> be downloaded due to CORS.';
+                    button2.onmouseout = () => statusbar.innerText = "Downloading images might take a while. What do you want?";
+                }
+                catch {
+                    statusbar.innerText = "Invalid content detected. Try copying again?"
+                }
+            }
+        });
+
+        async function getDownload(img) {
+            document.getElementById('box1').innerText = '';
+            document.getElementById('box2').innerText = '';
+            document.getElementById('box2').onmouseout = null;
+            copypaste.style.animation = 'disappear 0.1s 1 linear forwards';
+            formElem.style.border = "block";
+            formElem.style["background-color"] = '#ffffff30';
+            formElem.style.animation = "downloading 2s infinite";
+            document.getElementById('search').style.display = 'none';
+            document.getElementById('prefix').style.display = 'none';
+            document.getElementById('download').hidden = false;
+            textSpan.disabled = true;
+            textSpan.value = "Starting download...";
+            statusbar.innerHTML = 'While waiting, maybe check out my <a href="https://open.spotify.com/artist/0sZh9WUdVMwB3BXnLkf6Yy?si=0s_1Tw7lTY-AI15IEELJdQ&dl_branch=1"><span id="username">Spotify</span></a>?';
+
+            filelist = [];
+            for ([idx, post] of data.entries()) {
+                updateProgress(
+                    Math.round(100 * idx / data.length),
+                    "Downloading " + (idx + 1) + "/" + data.length + " posts..."
+                );
+
+                let fname = post.transliterated + '-' + post.slug;
+                let content = post.contents;
+
+                if (img) {
+                    replacements = {};
+                    for ([, file_url] of content.matchAll(/!\[[^\]]*\]\(([^\)]*)\)/g)) {
+                        if (!replacements.hasOwnProperty(file_url)) {
+                            filename = file_url.split('#').shift().split('?').shift().split('/').pop();
+                            replacements[file_url] = replacements.length + '-' + filename;
+                        }
+                    }
+                    for ([k, v] of Object.entries(replacements)) {
+                        request = await fetch(k);
+                        content = content.replace(
+                            RegExp('!\\[([^\\]]*)\\]\\(' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\)', 'g'),
+                            '![$1](' + fname + '_files/' + v + ')'
+                        );
+                        filelist.push({name: fname + '_files/' + v, input: request});
+                    }
+                }
+                filelist.push({name: fname + '.md', input: content});
+            }
+
+            formElem.style.background = '#00000000';
+            formElem.style.border = 'none';
+            textSpan.value = 'Download will be started shortly...';
+            // statusbar.style.animation = 'disappear 0.1s 1 linear forwards';
+            
+            downloadZip(filelist).blob().then(blob => {
+                url = URL.createObjectURL(blob);
+                let element = document.createElement('a');
+                element.setAttribute('href', url);
+                element.setAttribute('download', username + '.zip');
+                element.style.display = 'none';
+                document.body.appendChild(element);
+                element.click();
+            });
+        }
+
+        function updateProgress(percent, description) {
+            percolor = cmpStyle.getPropertyValue('--percent-color');
+            formElem.style["background-image"] = "linear-gradient(to right, " +
+                percolor + ", " +
+                percolor + " " + percent + "%, " +
+                "#00000000 " + (percent + 5) + "%, " +
+                "#00000000)";
+            textSpan.value = description;
+        }
+    </script>
+</body>
+
+</html>
