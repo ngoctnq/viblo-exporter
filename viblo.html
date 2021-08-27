@@ -155,15 +155,6 @@
             font-weight: 500;
             color: var(--blue);
         }
-        #copypaste button {
-            color: var(--blue);
-            font-weight: 500;
-            transition: color 0.2s, background-color 0.2s;
-        }
-        #copypaste button:hover {
-            background-color: var(--blue);
-            color: var(--light);
-        }
         #download {
             padding-right: 10px;
             color: var(--blue);
@@ -222,10 +213,10 @@
         copypaste = document.getElementById('copypaste');
         formElem.addEventListener("submit", (event) => {
             event.preventDefault();
-            iframeObj.src = "http://api.viblo.asia/users/" + textSpan.value;
+            iframeObj.src = "https://api.viblo.asia/users/" + textSpan.value;
             
             copypaste.style.visibility = 'visible';
-            copypaste.style.height = '30%';
+            copypaste.style.height = '180px';
             postCount = -1;
             textArea.value = "";
             data = {};
@@ -246,7 +237,7 @@
                         username = data.username;
                         textArea.value = "";
                         statusbar.innerHTML = 'Requesting information from Viblo, please wait...';
-                        iframeObj.src = "http://api.viblo.asia/users/" + textSpan.value + '/posts?limit=' + postCount;
+                        iframeObj.src = "https://api.viblo.asia/users/" + textSpan.value + '/posts?limit=' + postCount;
                         copypaste.style['pointer-events'] = 'none';
                         copypaste.style.animation = 'pulsating 1s linear infinite alternate';
                         iframeObj.onload = () => {
@@ -276,7 +267,6 @@
                     
                     document.getElementById('search').style.display = 'none';
                     document.getElementById('prefix').style.display = 'none';
-                    // document.getElementById('download').hidden = false;
                     formElem.innerHTML = '<button id="download" disabled><i class="fas fa-download"></i></button>' + formElem.innerHTML;
                     document.getElementById('download').style.animation = "downloading 2s infinite";
                     textSpan = document.getElementById('input');
