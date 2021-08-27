@@ -11,6 +11,7 @@
 
     <style>
         @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@100;400;500&display=swap");
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&display=swap');
 
         :root {
             --blue: #69779b;
@@ -45,6 +46,7 @@
         #content {
             display: table-cell;
             vertical-align: middle;
+            text-align: center;
         }
 
         #title {
@@ -124,6 +126,8 @@
             margin: 20px;
             line-height: 1.6;
             height: 2em;
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-weight: 400;
         }
         #copypaste {
             display: flex;
@@ -172,9 +176,9 @@
             }
         }
         @keyframes downloading {
-            0% { border-color: var(--purple); }
-            50% { border-color: var(--blue); }
-            100% { border-color: var(--purple); }
+            0% { color: var(--purple); }
+            50% { color: var(--blue); }
+            100% { color: var(--purple); }
         }
         @keyframes pulsating {
             0% { opacity: 100%; }
@@ -191,7 +195,6 @@
         </a>
 
         <form action="" autocomplete="off" class="input" id="form">
-            <button id="download" type="submit" hidden><i class="fas fa-download"></i></button>
             <span id="prefix">@</span>
             <input type="text" id="input" placeholder="username (e.g., ngoctnq)" required autofocus></input>
             <button id="search" type="submit"><i class="fas fa-angle-right"></i></button>
@@ -263,91 +266,49 @@
                 try {
                     data = JSON.parse(content).data;
                     if (!Array.isArray(data) || data.length != postCount) throw 'Invalid post data!'
-                    statusbar.innerText = "Downloading images might take a while. What do you want?"
-                    copypaste.innerHTML = '<button id="box1" onclick="getDownload(false)">Just the Markdowns</button><button id="box2" onclick="getDownload(true)">Give me everything</button>';
-                    copypaste.style.height = '36px';
                     textSpan.disabled = true;
                     document.getElementById('search').disabled = true;
-                    let button2 = document.getElementById('box2')
-                    button2.onmouseover = () => statusbar.innerHTML = 'Images from Viblo CDN will <span id="username">not</span> be downloaded due to CORS.';
-                    button2.onmouseout = () => statusbar.innerText = "Downloading images might take a while. What do you want?";
+                    
+                    document.getElementById('box1').innerText = '';
+                    document.getElementById('box2').innerText = '';
+                    document.getElementById('box2').onmouseout = null;
+                    copypaste.style.animation = 'disappear 0.1s 1 linear forwards';
+                    
+                    document.getElementById('search').style.display = 'none';
+                    document.getElementById('prefix').style.display = 'none';
+                    // document.getElementById('download').hidden = false;
+                    formElem.innerHTML = '<button id="download" disabled><i class="fas fa-download"></i></button>' + formElem.innerHTML;
+                    document.getElementById('download').style.animation = "downloading 2s infinite";
+                    textSpan = document.getElementById('input');
+                    textSpan.disabled = true;
+                    textSpan.value = 'Download will be started shortly...';
+                    statusbar.innerText = "Due to CORS, only Markdown source files are downloaded."
+
+                    formElem.style.background = '#00000000';
+                    formElem.style.border = 'none';
+
+                    filelist = [];
+                    for ([idx, post] of data.entries()) filelist.push({
+                        name: post.transliterated + '-' + post.slug + '.md',
+                        input: post.contents
+                    });
+                    
+                    downloadZip(filelist).blob().then(blob => {
+                        url = URL.createObjectURL(blob);
+                        let element = document.createElement('a');
+                        element.setAttribute('href', url);
+                        element.setAttribute('download', username + '.zip');
+                        element.style.display = 'none';
+                        document.body.appendChild(element);
+                        console.log('Finished preparing, downloading...');
+                        element.click();
+                    });
                 }
                 catch {
                     statusbar.innerText = "Invalid content detected. Try copying again?"
                 }
             }
         });
-
-        async function getDownload(img) {
-            document.getElementById('box1').innerText = '';
-            document.getElementById('box2').innerText = '';
-            document.getElementById('box2').onmouseout = null;
-            copypaste.style.animation = 'disappear 0.1s 1 linear forwards';
-            formElem.style.border = "block";
-            formElem.style["background-color"] = '#ffffff30';
-            formElem.style.animation = "downloading 2s infinite";
-            document.getElementById('search').style.display = 'none';
-            document.getElementById('prefix').style.display = 'none';
-            document.getElementById('download').hidden = false;
-            textSpan.disabled = true;
-            textSpan.value = "Starting download...";
-            statusbar.innerHTML = 'While waiting, maybe check out my <a href="https://open.spotify.com/artist/0sZh9WUdVMwB3BXnLkf6Yy?si=0s_1Tw7lTY-AI15IEELJdQ&dl_branch=1"><span id="username">Spotify</span></a>?';
-
-            filelist = [];
-            for ([idx, post] of data.entries()) {
-                updateProgress(
-                    Math.round(100 * idx / data.length),
-                    "Downloading " + (idx + 1) + "/" + data.length + " posts..."
-                );
-
-                let fname = post.transliterated + '-' + post.slug;
-                let content = post.contents;
-
-                if (img) {
-                    replacements = {};
-                    for ([, file_url] of content.matchAll(/!\[[^\]]*\]\(([^\)]*)\)/g)) {
-                        if (!replacements.hasOwnProperty(file_url)) {
-                            filename = file_url.split('#').shift().split('?').shift().split('/').pop();
-                            replacements[file_url] = replacements.length + '-' + filename;
-                        }
-                    }
-                    for ([k, v] of Object.entries(replacements)) {
-                        request = await fetch(k);
-                        content = content.replace(
-                            RegExp('!\\[([^\\]]*)\\]\\(' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\)', 'g'),
-                            '![$1](' + fname + '_files/' + v + ')'
-                        );
-                        filelist.push({name: fname + '_files/' + v, input: request});
-                    }
-                }
-                filelist.push({name: fname + '.md', input: content});
-            }
-
-            formElem.style.background = '#00000000';
-            formElem.style.border = 'none';
-            textSpan.value = 'Download will be started shortly...';
-            // statusbar.style.animation = 'disappear 0.1s 1 linear forwards';
-            
-            downloadZip(filelist).blob().then(blob => {
-                url = URL.createObjectURL(blob);
-                let element = document.createElement('a');
-                element.setAttribute('href', url);
-                element.setAttribute('download', username + '.zip');
-                element.style.display = 'none';
-                document.body.appendChild(element);
-                element.click();
-            });
-        }
-
-        function updateProgress(percent, description) {
-            percolor = cmpStyle.getPropertyValue('--percent-color');
-            formElem.style["background-image"] = "linear-gradient(to right, " +
-                percolor + ", " +
-                percolor + " " + percent + "%, " +
-                "#00000000 " + (percent + 5) + "%, " +
-                "#00000000)";
-            textSpan.value = description;
-        }
     </script>
 </body>
 
